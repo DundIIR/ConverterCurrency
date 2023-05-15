@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:converterCurrency="clr-namespace:ConverterCurrency"
+             x:Class="ConverterCurrency.MainPage"
+             x:DataType="converterCurrency:MainViewModel">
+
+
+    <ContentPage.BindingContext>
+        <converterCurrency:MainViewModel/>
+    </ContentPage.BindingContext>
+
+
+    <Grid ColumnDefinitions="auto, auto, auto, auto" RowDefinitions="100, auto, auto" ColumnSpacing="-1" RowSpacing="10">
+        <Entry Grid.Column="0" Grid.Row="1" WidthRequest="150" HeightRequest="40" BackgroundColor="White" TextColor="Black"
+               Text="{Binding ValueFirstInput , TargetNullValue={x:Null}}"/>
+        <Picker Grid.Column="1" Grid.Row="1"
+                ItemsSource="{Binding CollectionCurrency}"
+                SelectedItem="{Binding SelectionFirstCurrency}"/>
+
+        <!--<Entry Grid.Column="2" Grid.Row="1" WidthRequest="150" HeightRequest="40" BackgroundColor="White" TextColor="Black"
+               Text="{Binding Result , TargetNullValue={x:Null}}"/>-->
+
+        <BoxView Grid.Column="2" Grid.Row="1" WidthRequest="150" HeightRequest="40" Color="White" CornerRadius="5"/>
+        <Label Grid.Column="2" Grid.Row="1" WidthRequest="140" HeightRequest="30" BackgroundColor="White" TextColor="Black" VerticalTextAlignment="Center" Padding="3"
+               Text ="{Binding Result}"/>
+        <Picker Grid.Column="3" Grid.Row="1"
+                ItemsSource="{Binding CollectionCurrency}"
+                SelectedItem="{Binding SelectionSecondCurrency}"/>
+
+        <DatePicker Grid.Row="2" Format="MM/dd/yyyy"
+                    Date="{Binding SelectionDate}"/>
+    </Grid>
+
+</ContentPage>
