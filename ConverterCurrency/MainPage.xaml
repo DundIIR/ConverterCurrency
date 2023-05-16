@@ -5,30 +5,43 @@
              x:Class="ConverterCurrency.MainPage"
              x:DataType="converterCurrency:MainViewModel">
 
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <converterCurrency:ValueInputConvertor x:Key="ValueInputConvertor"></converterCurrency:ValueInputConvertor>
+        </ResourceDictionary>
+    </ContentPage.Resources>
 
     <ContentPage.BindingContext>
         <converterCurrency:MainViewModel/>
     </ContentPage.BindingContext>
 
 
-    <Grid ColumnDefinitions="auto, auto, auto, auto" RowDefinitions="100, auto, auto" ColumnSpacing="-1" RowSpacing="10">
-        <Entry Grid.Column="0" Grid.Row="1" WidthRequest="150" HeightRequest="40" BackgroundColor="White" TextColor="Black"
-               Text="{Binding ValueFirstInput , TargetNullValue={x:Null}}"/>
-        <Picker Grid.Column="1" Grid.Row="1"
+    <Grid ColumnDefinitions="auto, auto, auto, *, auto" RowDefinitions="130, auto, auto" ColumnSpacing="10" RowSpacing="15"
+          Margin="15">
+
+        <Image Grid.ColumnSpan="5" Source="logo.png" ></Image>
+
+        <Entry Grid.Column="0" Grid.Row="1" WidthRequest="220" HeightRequest="40" BackgroundColor="White" TextColor="Black"
+               Text="{Binding ValueFirstInput , TargetNullValue={x:Null}, Converter={StaticResource ValueInputConvertor}}"/>
+        <Picker Grid.Column="1" Grid.Row="1" MinimumWidthRequest="220" MinimumHeightRequest="40"
                 ItemsSource="{Binding CollectionCurrency}"
                 SelectedItem="{Binding SelectionFirstCurrency}"/>
 
-        <!--<Entry Grid.Column="2" Grid.Row="1" WidthRequest="150" HeightRequest="40" BackgroundColor="White" TextColor="Black"
-               Text="{Binding Result , TargetNullValue={x:Null}}"/>-->
 
-        <BoxView Grid.Column="2" Grid.Row="1" WidthRequest="150" HeightRequest="40" Color="White" CornerRadius="5"/>
-        <Label Grid.Column="2" Grid.Row="1" WidthRequest="140" HeightRequest="30" BackgroundColor="White" TextColor="Black" VerticalTextAlignment="Center" Padding="3"
-               Text ="{Binding Result}"/>
-        <Picker Grid.Column="3" Grid.Row="1"
+        <Grid Grid.Column="2" Grid.Row="1" TranslationY="25" TranslationX="15">
+            <Image Source="reverse.png" WidthRequest="25" HeightRequest="25"></Image>
+            <Button WidthRequest="30" HeightRequest="30" BackgroundColor="Transparent" Command="{Binding ReverseCommand}" />
+        </Grid>
+
+        
+        <Entry Grid.Column="0" Grid.Row="2" WidthRequest="220" HeightRequest="40" BackgroundColor="White" TextColor="Black"
+               Text ="{Binding ValueSecondInput, TargetNullValue={x:Null}, Converter={StaticResource ValueInputConvertor}}"/>
+        <Picker Grid.Column="1" Grid.Row="2" MinimumWidthRequest="220" MinimumHeightRequest="40"
                 ItemsSource="{Binding CollectionCurrency}"
                 SelectedItem="{Binding SelectionSecondCurrency}"/>
 
-        <DatePicker Grid.Row="2" Format="MM/dd/yyyy"
+
+        <DatePicker Grid.Row="1" Grid.Column="4" Format="MM/dd/yyyy"
                     Date="{Binding SelectionDate}"/>
     </Grid>
 

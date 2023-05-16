@@ -1,6 +1,8 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Windows.Input;
 using Flurl.Http;
 
 
@@ -14,6 +16,7 @@ public partial class MainPage : ContentPage
     {
         InitializeComponent();
     }
+
 }
 
 public class Currency
@@ -90,15 +93,13 @@ public class Root
 
 
 
-
-
-public class MainViewModel : INotifyPropertyChanged
+public sealed class MainViewModel : INotifyPropertyChanged
 {
-    public MainViewModel()
-    {
-        LoadValues();
 
-    }
+    private string _firstCurrency = "USD", _secondCurrency = "RUB";
+    
+
+    public ICommand ReverseCommand { get; }
 
     private DateTime _selectionDate = DateTime.Today;
     public DateTime SelectionDate
@@ -109,49 +110,80 @@ public class MainViewModel : INotifyPropertyChanged
             if (_selectionDate == value) return;
             _selectionDate = value;
             OnPropertyChanged(nameof(SelectionDate));
+            if(SelectionFirstCurrency != null)
+                _firstCurrency = SelectionFirstCurrency.CharCode;
+            if (SelectionSecondCurrency != null)
+                _secondCurrency = SelectionSecondCurrency.CharCode;
             LoadValues();
         }
     }
 
 
-    private double? _valueFirstInputDouble;
+    
 
     private string _valueFirstInput;
     public string ValueFirstInput
     {
-        get => _valueFirstInput; 
+        get => _valueFirstInput;
         set
         {
             if(_valueFirstInput == value) return;
             _valueFirstInput = value;
+
             OnPropertyChanged(nameof(ValueFirstInput));
+            UpdateValueSecondInput();
 
-            if (double.TryParse(value, out double result))
-            {
-                _valueFirstInputDouble = result;
-            }
-            else
-            {
-                _valueFirstInputDouble = null;
-            }
-            OnPropertyChanged(nameof(Result));
         }
     }
-
-    public string Result
+    
+    private string _valueSecondInput;
+    public string ValueSecondInput
     {
-        get
+        get => _valueSecondInput;
+        set
         {
-            if (_selectionFirstCurrency == null || _selectionSecondCurrency == null) return "";
-            else
-            {
-                //return Math.Round(((_valueFirstInputDouble * SelectionFirstCurrency.Value / SelectionFirstCurrency.Nominal) /
-                //                                     (SelectionSecondCurrency.Value / SelectionSecondCurrency.Nominal)) ?? 0, 6);
-                return ((_valueFirstInputDouble * SelectionFirstCurrency.Value / SelectionFirstCurrency.Nominal) /
-                        (SelectionSecondCurrency.Value / SelectionSecondCurrency.Nominal))?.ToString("F6");
-            }
+            if (_valueSecondInput == value) return;
+            _valueSecondInput = value;
+
+            OnPropertyChanged(nameof(ValueSecondInput));
+            UpdateValueFirstInput();
+            
         }
     }
+
+    private void UpdateValueFirstInput()
+    {
+        if (double.TryParse(ValueSecondInput, out double result))
+        {
+            if (SelectionFirstCurrency != null && SelectionSecondCurrency != null)
+                ValueFirstInput = ((result * SelectionSecondCurrency.Value / SelectionSecondCurrency.Nominal) /
+                                   (SelectionFirstCurrency.Value / SelectionFirstCurrency.Nominal)).ToString();
+            else
+                ValueFirstInput = null;
+        }
+        else
+        {
+            ValueFirstInput = null;
+        }
+    }
+
+    private void UpdateValueSecondInput()
+    {
+        if (double.TryParse(ValueFirstInput, out double result))
+        {
+            if (SelectionFirstCurrency != null && SelectionSecondCurrency != null)
+                ValueSecondInput = ((result * SelectionFirstCurrency.Value / SelectionFirstCurrency.Nominal) /
+                                    (SelectionSecondCurrency.Value / SelectionSecondCurrency.Nominal)).ToString();
+            else
+                ValueSecondInput = null;
+        }
+        else
+        {
+            ValueSecondInput = null;
+        }
+    }
+
+
 
 
 
@@ -162,10 +194,10 @@ public class MainViewModel : INotifyPropertyChanged
         get => _selectionFirstCurrency;
         set
         {
-            if (_selectionFirstCurrency == value) return;
+            if (_selectionFirstCurrency == value || value == null) return;
             _selectionFirstCurrency = value;
             OnPropertyChanged(nameof(SelectionFirstCurrency));
-            OnPropertyChanged(nameof(Result));
+            UpdateValueSecondInput();
         }
     }
 
@@ -175,10 +207,10 @@ public class MainViewModel : INotifyPropertyChanged
         get => _selectionSecondCurrency;
         set
         {
-            if (_selectionSecondCurrency == value) return;
+            if (_selectionSecondCurrency == value || value == null) return;
             _selectionSecondCurrency = value;
             OnPropertyChanged(nameof(SelectionSecondCurrency));
-            OnPropertyChanged(nameof(Result));
+            UpdateValueSecondInput();
         }
     }
 
@@ -186,28 +218,56 @@ public class MainViewModel : INotifyPropertyChanged
 
     private async Task LoadValues()
     {
-        string date = _selectionDate.ToString("yyyy/MM/dd").Replace(".", "/");
-        var ReceivedData = await $"https://www.cbr-xml-daily.ru/archive/{date}/daily_json.js".GetJsonAsync<Root>();
-
-
-        foreach (var property in typeof(Valute).GetProperties())
+        try
         {
-            Currency currency = (Currency)property.GetValue(ReceivedData.Valute);
-            CollectionCurrency.Add(currency);
+            https://www.cbr-xml-daily.ru/archive/2023/05/13/daily_json.js
+            var ReceivedData = await $"https://www.cbr-xml-daily.ru/archive/{SelectionDate:yyyy'/'MM'/'dd}/daily_json.js".GetJsonAsync<Root>();
+
+            CollectionCurrency.Clear();
+
+            foreach (var property in typeof(Valute).GetProperties())
+            {
+                Currency currency = (Currency)property.GetValue(ReceivedData.Valute);
+                CollectionCurrency.Add(currency);
+            }
+
+            CollectionCurrency.Add(new Currency{ CharCode = "RUB", Name = "Российский рубль", Value = 1, Nominal = 1} );
+
+            SelectionFirstCurrency = CollectionCurrency.FirstOrDefault(c => c.CharCode == _firstCurrency);
+            SelectionSecondCurrency = CollectionCurrency.FirstOrDefault(c => c.CharCode == _secondCurrency);
+            
         }
-
-        CollectionCurrency.Add(new Currency{ CharCode = "RUB", Name = "Российский рубль", Value = 1, Nominal = 1} );
-
-        SelectionFirstCurrency = CollectionCurrency.FirstOrDefault(c => c.CharCode == "RUB");
-        SelectionSecondCurrency = CollectionCurrency.FirstOrDefault(c => c.CharCode == "USD");
-
+        catch (FlurlHttpException ex) when (ex.StatusCode == 404)
+        {
+            //if((DateTime.Today - SelectionDate).TotalDays >= 25 )
+            //    SelectionDate = SelectionDate.AddDays(+1);
+            //else
+            SelectionDate = SelectionDate.AddDays(-1);
+        }
+        
     }
+
+    public MainViewModel()
+    {
+#pragma warning disable CS4014
+        LoadValues();
+#pragma warning restore CS4014
+        ValueFirstInput = "1";
+
+        ReverseCommand = new Command(s =>
+        {
+            (SelectionFirstCurrency, SelectionSecondCurrency) = (SelectionSecondCurrency, SelectionFirstCurrency);
+            
+        });
+    }
+
 
     public event PropertyChangedEventHandler PropertyChanged;
 
-    protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+    private void OnPropertyChanged([CallerMemberName] string propertyName = null)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }
+
 
