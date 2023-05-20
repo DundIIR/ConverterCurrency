@@ -128,6 +128,10 @@ public sealed class MainViewModel : INotifyPropertyChanged
         set
         {
             if(_valueFirstInput == value) return;
+
+            if (double.TryParse(_valueFirstInput, out var oldFirstInput) && double.TryParse(value, out var newFirstInput))
+                if( Math.Abs(oldFirstInput - newFirstInput) < 0.01) return;
+
             _valueFirstInput = value;
 
             OnPropertyChanged(nameof(ValueFirstInput));
@@ -143,6 +147,10 @@ public sealed class MainViewModel : INotifyPropertyChanged
         set
         {
             if (_valueSecondInput == value) return;
+
+            if (double.TryParse(_valueSecondInput, out var oldSecondInput) && double.TryParse(value, out var newSecondInput))
+                if (Math.Abs(oldSecondInput - newSecondInput) < 0.01) return;
+
             _valueSecondInput = value;
 
             OnPropertyChanged(nameof(ValueSecondInput));
@@ -228,7 +236,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
             foreach (var property in typeof(Valute).GetProperties())
             {
                 Currency currency = (Currency)property.GetValue(ReceivedData.Valute);
-                CollectionCurrency.Add(currency);
+                if(currency != null)
+                    CollectionCurrency.Add(currency);
             }
 
             CollectionCurrency.Add(new Currency{ CharCode = "RUB", Name = "Российский рубль", Value = 1, Nominal = 1} );
